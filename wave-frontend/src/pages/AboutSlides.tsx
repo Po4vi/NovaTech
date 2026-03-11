@@ -13,9 +13,9 @@ const slides = [
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="space-y-4"
+          className="space-y-4 text-center"
         >
-          <div className="text-xl md:text-2xl font-semibold">
+          <div className="text-xl md:text-2xl font-semibold text-center">
             <span className="text-purple-400">TEAM NOVATECH</span> <br />
             <a 
               href="https://wave-frontend-plum.vercel.app" 
@@ -27,7 +27,7 @@ const slides = [
             </a>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 my-6">
+          <div className="grid grid-cols-2 gap-4 my-6 text-center">
             <motion.div 
               whileHover={{ scale: 1.05 }}
               className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center"
@@ -44,12 +44,12 @@ const slides = [
             </motion.div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl p-4 text-center">
             <span className="text-purple-300 font-semibold">156 teams — </span>
             <span className="text-yellow-400 font-bold">ONLY Cybersecurity team</span>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {["Python", "TypeScript", "FastAPI", "React"].map((tech, i) => (
               <motion.span
                 key={tech}
@@ -63,7 +63,7 @@ const slides = [
             ))}
           </div>
 
-          <div className="text-sm text-gray-400 mt-4">
+          <div className="text-sm text-gray-400 mt-4 text-center">
             Hackathon 2025 | Agentic AI • Cybersecurity • FinTech
           </div>
         </motion.div>

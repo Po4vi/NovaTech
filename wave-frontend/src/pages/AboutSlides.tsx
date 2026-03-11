@@ -274,8 +274,8 @@ const slides = [
               { agent: "Agent 1 – Text Analysis", score: "+40", color: "blue" },
               { agent: "Agent 2 – URL Detector", score: "+30", color: "purple" },
               { agent: "Agent 3 – Fraud Pattern", score: "+20", color: "orange" },
-              { agent: "Agent 4 – Risk Engine", score: "+10", color: "green" },
-            ].map((agent, i) => (
+              { agent: "Agent 4 – Risk Engine", score: "+10", color: "green" }
+            ].map((agent) => (
               <motion.div
                 key={agent.agent}
                 whileHover={{ scale: 1.05 }}

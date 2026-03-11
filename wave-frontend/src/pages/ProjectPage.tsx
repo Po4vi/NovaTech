@@ -547,7 +547,7 @@ export function ProjectPage() {
               </h1>
               {/* About Project Button */}
               <motion.button
-                onClick={() => alert("This project analyzes messages for scam, phishing, and fraud patterns using AI agents and risk scoring.")}
+                onClick={() => navigate("/about")}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

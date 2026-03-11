@@ -339,6 +339,24 @@ export function AboutSlides() {
             >
               Next
             </motion.button>
+            {/* Agent Deep Dive Button */}
+            <motion.button
+              onClick={() => navigate("/about-agents")}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 10,
+                border: "1px solid #a78bfa",
+                background: "#181828",
+                color: "#a78bfa",
+                fontWeight: 700,
+                fontSize: "1rem",
+                cursor: "pointer",
+                transition: "background 0.2s",
+              }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Agent Deep Dive
+            </motion.button>
           </div>
           <div style={{ color: "#a78bfa", marginTop: 16, fontSize: "0.95rem" }}>
             Slide {index + 1} of {slides.length}

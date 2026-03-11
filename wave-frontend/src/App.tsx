@@ -11,6 +11,7 @@ function App() {
       <Route path="/main" element={<MainPage />} />
       <Route path="/project" element={<ProjectPage />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/about-agents" element={require("@/pages/AboutAgentsSlides").AboutAgentsSlides()} />
     </Routes>
   );
 }

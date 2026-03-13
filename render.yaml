@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: novatech-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: EMAIL_IMAP_HOST
+        value: imap.gmail.com
+      - key: EMAIL_IMAP_PORT
+        value: "993"
+      - key: EMAIL_IMAP_USERNAME
+        value: CHANGE_ME_EMAIL
+      - key: EMAIL_IMAP_PASSWORD
+        value: CHANGE_ME_APP_PASSWORD
+      - key: EMAIL_IMAP_MAILBOX
+        value: INBOX
+      - key: EMAIL_SCAN_DEFAULT_LIMIT
+        value: "10"
+      - key: EMAIL_SCAN_DEFAULT_UNREAD_ONLY
+        value: "true"
+      - key: EMAIL_SCAN_POLL_SECONDS
+        value: "0"
+      - key: EMAIL_SCAN_POLL_MARK_AS_SEEN
+        value: "true"
+
+  - type: web
+    name: novatech-frontend
+    runtime: static
+    rootDir: wave-frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://novatech-3i4o.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

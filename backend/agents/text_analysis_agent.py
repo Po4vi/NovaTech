@@ -3,6 +3,7 @@ Agent 1 – Text Analysis Agent
 Scans message text for scam language, urgency indicators, and suspicious phrases.
 """
 
+import re
 from typing import Dict, Any, List
 
 # ── Pattern banks ──────────────────────────────────────────────
@@ -65,9 +66,9 @@ SOCIAL_ENGINEERING_PHRASES = [
 
 
 def _count_phrase_hits(text: str, phrase_bank: List[str]) -> List[str]:
-    """Return matched phrases from a phrase bank."""
+    """Return matched phrases from a phrase bank using word-boundary matching."""
     lower = text.lower()
-    return [p for p in phrase_bank if p in lower]
+    return [p for p in phrase_bank if re.search(r'\b' + re.escape(p) + r'\b', lower)]
 
 
 def _exclamation_density(text: str) -> float:

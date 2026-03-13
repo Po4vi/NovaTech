@@ -52,13 +52,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const timeout = setTimeout(() => controller.abort(), 30_000);
 
   try {
+    const headers: Record<string, string> = { ...(options?.headers as Record<string, string>) };
+    if (options?.body) {
+      headers["Content-Type"] = "application/json";
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!res.ok) {
@@ -88,13 +90,4 @@ export async function analyzeMessage(message: string): Promise<AnalysisResult> {
 export async function fetchExamples(): Promise<SampleMessage[]> {
   const data = await request<{ examples: SampleMessage[] }>("/api/examples");
   return data.examples;
-}
-
-export async function healthCheck(): Promise<boolean> {
-  try {
-    await request("/api/health");
-    return true;
-  } catch {
-    return false;
-  }
 }

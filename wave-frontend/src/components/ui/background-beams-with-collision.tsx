@@ -25,26 +25,32 @@ export function BackgroundBeamsWithCollision({ children }: BeamsBgProps) {
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
 
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
 
+    // Cache dimensions to avoid layout thrashing every frame
+    let cachedW = 0;
+    let cachedH = 0;
+
     const fit = () => {
-      const { width: w, height: h } = wrap.getBoundingClientRect();
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
+      const rect = wrap.getBoundingClientRect();
+      cachedW = rect.width;
+      cachedH = rect.height;
+      canvas.width = cachedW * dpr;
+      canvas.height = cachedH * dpr;
+      canvas.style.width = cachedW + "px";
+      canvas.style.height = cachedH + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     fit();
     window.addEventListener("resize", fit);
 
     const makeBeam = (): Beam => {
-      const { width: w, height: h } = wrap.getBoundingClientRect();
       const top = Math.random() > 0.5;
       return {
-        x: Math.random() * w,
-        y: top ? -80 : h + 80,
+        x: Math.random() * cachedW,
+        y: top ? -80 : cachedH + 80,
         len: 80 + Math.random() * 180,
         angle: top
           ? Math.PI / 2 + (Math.random() - 0.5) * 0.6
@@ -59,7 +65,8 @@ export function BackgroundBeamsWithCollision({ children }: BeamsBgProps) {
     const beams: Beam[] = Array.from({ length: 24 }, makeBeam);
 
     const draw = () => {
-      const { width: w, height: h } = wrap.getBoundingClientRect();
+      const w = cachedW;
+      const h = cachedH;
       ctx.fillStyle = "rgba(0,0,0,0.08)";
       ctx.fillRect(0, 0, w, h);
 

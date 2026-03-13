@@ -3,6 +3,7 @@ Agent 3 – Fraud Pattern Agent
 Checks the message against a database of known scam templates.
 """
 
+import re
 from typing import Dict, Any, List
 
 # ── Scam pattern templates ─────────────────────────────────────
@@ -77,8 +78,8 @@ class FraudPatternAgent:
         all_matches: List[Dict[str, Any]] = []
 
         for pattern in PATTERNS:
-            kw_hits = sum(1 for kw in pattern["keywords"] if kw in lower)
-            tr_hits = sum(1 for tr in pattern["triggers"] if tr in lower)
+            kw_hits = sum(1 for kw in pattern["keywords"] if re.search(r'\b' + re.escape(kw) + r'\b', lower))
+            tr_hits = sum(1 for tr in pattern["triggers"] if re.search(r'\b' + re.escape(tr) + r'\b', lower))
 
             total_possible = len(pattern["keywords"]) + len(pattern["triggers"])
             if total_possible == 0:

@@ -1,6 +1,5 @@
 """Quick test of the scam detection pipeline."""
 from crew.scam_detection_crew import ScamDetectionCrew
-import json
 
 crew = ScamDetectionCrew()
 
@@ -12,7 +11,9 @@ print("=== TEST 1: Scam message ===")
 print(f"Score: {r['risk_score']}, Level: {r['risk_level']}")
 for reason in r["reasons"]:
     print(f"  - {reason}")
-print()
+assert r["risk_level"] == "SCAM", f"Expected SCAM, got {r['risk_level']}"
+assert r["risk_score"] > 60, f"Expected score > 60, got {r['risk_score']}"
+print("PASSED\n")
 
 # Test 2: Safe message
 r2 = crew.analyze(
@@ -22,3 +23,8 @@ print("=== TEST 2: Safe message ===")
 print(f"Score: {r2['risk_score']}, Level: {r2['risk_level']}")
 for reason in r2["reasons"]:
     print(f"  - {reason}")
+assert r2["risk_level"] == "SAFE", f"Expected SAFE, got {r2['risk_level']}"
+assert r2["risk_score"] <= 30, f"Expected score <= 30, got {r2['risk_score']}"
+print("PASSED\n")
+
+print("All tests passed!")

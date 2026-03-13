@@ -3,6 +3,34 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 
+// Static Tailwind class lookup maps (dynamic interpolation breaks JIT compilation)
+const bgColorMap: Record<string, string> = {
+  green: "bg-green-500/50",
+  yellow: "bg-yellow-500/50",
+  orange: "bg-orange-500/50",
+  red: "bg-red-500/50",
+  purple: "bg-purple-500/50",
+  blue: "bg-blue-500/50",
+};
+
+const bgSolidColorMap: Record<string, string> = {
+  green: "bg-green-500",
+  yellow: "bg-yellow-500",
+  orange: "bg-orange-500",
+  red: "bg-red-500",
+  purple: "bg-purple-500",
+  blue: "bg-blue-500",
+};
+
+const textColorMap: Record<string, string> = {
+  green: "text-green-400",
+  yellow: "text-yellow-400",
+  orange: "text-orange-400",
+  red: "text-red-400",
+  purple: "text-purple-400",
+  blue: "text-blue-400",
+};
+
 const slides = [
   {
     title: "AGENTIC AI SCAM INTERCEPTOR",
@@ -124,7 +152,7 @@ const slides = [
                     initial={{ width: 0 }}
                     animate={{ width: `${(item.count / 1320) * 100}%` }}
                     transition={{ delay: 0.7 + i * 0.1, duration: 0.8 }}
-                    className={`h-full bg-${item.color}-500/50 rounded-full`}
+                    className={`h-full ${bgColorMap[item.color]} rounded-full`}
                   />
                 </div>
                 <span className="text-xs text-gray-300">{item.count}K</span>
@@ -282,7 +310,7 @@ const slides = [
                 className="bg-gray-800/50 rounded-lg p-2 text-sm"
               >
                 <div className="text-gray-300">{agent.agent}</div>
-                <div className={`text-${agent.color}-400 font-bold`}>{agent.score}</div>
+                <div className={`${textColorMap[agent.color]} font-bold`}>{agent.score}</div>
               </motion.div>
             ))}
           </div>
@@ -346,7 +374,7 @@ const slides = [
               className="relative pl-4 border-l-2 border-purple-500/30 py-2"
             >
               <div className="flex items-center gap-2">
-                <span className={`text-${agent.color}-400 font-bold`}>{agent.agent}</span>
+                <span className={`${textColorMap[agent.color]} font-bold`}>{agent.agent}</span>
                 <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
                   Max: {agent.max}
                 </span>
@@ -391,7 +419,7 @@ const slides = [
                 className="bg-gray-800/50 rounded-lg p-2"
               >
                 <div className="text-xs text-gray-400">{item.label}</div>
-                <div className={`text-${item.color}-400 font-bold text-lg`}>
+                <div className={`${textColorMap[item.color]} font-bold text-lg`}>
                   {item.score}/{item.max}
                 </div>
               </motion.div>
@@ -537,7 +565,7 @@ const slides = [
               transition={{ delay: i * 0.15 }}
               className="relative pl-6 border-l-2 border-purple-500/30 py-2"
             >
-              <div className={`text-${item.color}-400 font-bold`}>{item.layer}</div>
+              <div className={`${textColorMap[item.color]} font-bold`}>{item.layer}</div>
               <div className="text-sm text-gray-400">{item.desc}</div>
             </motion.div>
           ))}
@@ -575,7 +603,7 @@ const slides = [
               className="space-y-1"
             >
               <div className="flex justify-between text-sm">
-                <span className={`text-${item.color}-400 font-semibold`}>{item.phase}</span>
+                <span className={`${textColorMap[item.color]} font-semibold`}>{item.phase}</span>
                 <span className="text-xs text-gray-400">{item.progress}%</span>
               </div>
               <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -583,7 +611,7 @@ const slides = [
                   initial={{ width: 0 }}
                   animate={{ width: `${item.progress}%` }}
                   transition={{ delay: 0.5 + i * 0.1, duration: 0.8 }}
-                  className={`h-full bg-${item.color}-500`}
+                  className={`h-full ${bgSolidColorMap[item.color]}`}
                 />
               </div>
               <div className="text-xs text-gray-400">{item.desc}</div>
@@ -668,7 +696,7 @@ const slides = [
             >
               <span className="text-2xl">{item.icon}</span>
               <div>
-                <div className={`text-${item.color}-400 font-semibold`}>{item.title}</div>
+                <div className={`${textColorMap[item.color]} font-semibold`}>{item.title}</div>
                 <div className="text-sm text-gray-400">{item.desc}</div>
               </div>
             </motion.div>
@@ -788,9 +816,11 @@ export function AboutSlides() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
+        e.preventDefault();
         setDirection(-1);
         setIndex((i) => Math.max(0, i - 1));
       } else if (e.key === "ArrowRight") {
+        e.preventDefault();
         setDirection(1);
         setIndex((i) => Math.min(slides.length - 1, i + 1));
       }
@@ -830,7 +860,7 @@ export function AboutSlides() {
           }}
         >
           <motion.button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/project")}
             style={{
               display: "inline-flex",
               alignItems: "center",

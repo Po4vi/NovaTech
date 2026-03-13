@@ -79,9 +79,9 @@ class URLVerificationAgent:
                     score += 10
                     break
 
-            # URL shortener
+            # URL shortener (exact domain match)
             for short in SHORTENER_DOMAINS:
-                if short in domain:
+                if domain == short or domain.endswith("." + short):
                     domain_flags.append("URL shortener detected")
                     score += 8
                     break

@@ -8,6 +8,7 @@ Endpoints:
 """
 
 import logging
+import asyncio
 from datetime import datetime, timezone
 from collections import deque
 from typing import List, Dict, Any
@@ -17,6 +18,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from crew.scam_detection_crew import ScamDetectionCrew
+
+# ── Constants ─────────────────────────────────────────────────
+VERSION = "2.0.0"
 
 # ── Logging ────────────────────────────────────────────────────
 logging.basicConfig(
@@ -29,14 +33,14 @@ logger = logging.getLogger("scam-interceptor")
 app = FastAPI(
     title="Agentic AI – Scam Interceptor",
     description="Multi-agent scam detection API by Team NovaTech",
-    version="2.0.0",
+    version=VERSION,
 )
 
 # ── CORS ───────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -98,7 +102,7 @@ async def root():
     return {
         "service": "Agentic AI – Scam Interceptor",
         "team": "NovaTech",
-        "version": "2.0.0",
+        "version": VERSION,
         "endpoints": {
             "POST /api/analyze": "Analyze a message for scam indicators",
             "GET /api/health": "Health check",
@@ -117,7 +121,13 @@ async def analyze_message(req: AnalyzeRequest):
         raise HTTPException(status_code=422, detail="Message cannot be empty or whitespace only.")
 
     logger.info("Analyzing message (%d chars)", len(message))
-    result = crew.analyze(message)
+
+    try:
+        # Offload synchronous crew pipeline to a thread pool to avoid blocking the event loop
+        result = await asyncio.to_thread(crew.analyze, message)
+    except Exception:
+        logger.exception("Crew pipeline failed")
+        raise HTTPException(status_code=500, detail="Analysis pipeline encountered an error. Please try again.")
 
     # Enrich metadata
     result.setdefault("metadata", {})
@@ -144,7 +154,7 @@ async def analyze_message(req: AnalyzeRequest):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "service": "scam-interceptor", "version": "2.0.0"}
+    return {"status": "ok", "service": "scam-interceptor", "version": VERSION}
 
 
 @app.get("/api/examples")

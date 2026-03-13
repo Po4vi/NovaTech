@@ -400,6 +400,8 @@ export function ProjectPage() {
   const [pipelineStep, setPipelineStep] = useState(-1);
   const [copied, setCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     fetchExamples()
@@ -428,7 +430,24 @@ export function ProjectPage() {
           },
         ]);
       });
+
+    // Cleanup all pipeline timers on unmount
+    return () => {
+      timerRefs.current.forEach(clearTimeout);
+    };
   }, []);
+
+  // Click-outside handler for dropdown
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
 
   const handleAnalyze = useCallback(async () => {
     if (!message.trim()) return;
@@ -439,12 +458,15 @@ export function ProjectPage() {
 
     // Run API call and visual pipeline in parallel — always show full animation
     const stepDurations = [800, 1600, 2400, 3200, 4000]; // ms for each step transition
+    timerRefs.current.forEach(clearTimeout);
+    timerRefs.current = [];
     const stepPromise = new Promise<void>((resolve) => {
       stepDurations.forEach((delay, i) => {
-        setTimeout(() => {
+        const id = setTimeout(() => {
           setPipelineStep(i + 1);
           if (i === stepDurations.length - 1) resolve();
         }, delay);
+        timerRefs.current.push(id);
       });
     });
 
@@ -470,12 +492,16 @@ export function ProjectPage() {
     setDropdownOpen(false);
   };
 
-  const copyResult = () => {
+  const copyResult = async () => {
     if (!result) return;
     const text = `Risk: ${result.risk_level} (${result.risk_score}/100)\n${result.recommendation}\n\nReasons:\n${result.reasons.map((r) => `- ${r}`).join("\n")}`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API may fail on HTTP or without permissions
+    }
   };
 
 
@@ -594,7 +620,7 @@ export function ProjectPage() {
               </div>
 
               {/* Sample dropdown */}
-              <div style={{ position: "relative" }}>
+              <div ref={dropdownRef} style={{ position: "relative" }}>
                 <motion.button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   style={{
@@ -817,6 +843,7 @@ export function ProjectPage() {
                     marginBottom: 16,
                     borderColor: LEVEL_COLORS[result.risk_level]?.border,
                     boxShadow: LEVEL_COLORS[result.risk_level]?.glow,
+                    position: "relative",
                   }}
                 >
                   <div

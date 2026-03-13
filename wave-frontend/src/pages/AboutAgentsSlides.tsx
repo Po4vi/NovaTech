@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 
@@ -264,8 +264,25 @@ class AnalyzeResponse(BaseModel):
 
 export function AboutAgentsSlides() {
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
   const slide = slides[index];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setDirection(-1);
+        setIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setDirection(1);
+        setIndex((i) => Math.min(slides.length - 1, i + 1));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", width: "100%", background: "#050508" }}>
@@ -283,7 +300,7 @@ export function AboutAgentsSlides() {
           }}
         >
           <motion.button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/about")}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -308,9 +325,9 @@ export function AboutAgentsSlides() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={index}
-                initial={{ opacity: 0, x: 40 }}
+                initial={{ opacity: 0, x: direction >= 0 ? 40 : -40 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
+                exit={{ opacity: 0, x: direction >= 0 ? -40 : 40 }}
                 transition={{ duration: 0.5 }}
               >
                 <div style={{ color: "#a78bfa", fontWeight: 700, fontSize: "1.1rem", marginBottom: 8 }}>{slide.subtitle}</div>
@@ -321,7 +338,10 @@ export function AboutAgentsSlides() {
           </div>
           <div style={{ display: "flex", gap: 16, marginTop: 32 }}>
             <motion.button
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+              onClick={() => {
+                setDirection(-1);
+                setIndex((i) => Math.max(0, i - 1));
+              }}
               disabled={index === 0}
               style={{
                 padding: "10px 24px",
@@ -339,7 +359,10 @@ export function AboutAgentsSlides() {
               Previous
             </motion.button>
             <motion.button
-              onClick={() => setIndex((i) => Math.min(slides.length - 1, i + 1))}
+              onClick={() => {
+                setDirection(1);
+                setIndex((i) => Math.min(slides.length - 1, i + 1));
+              }}
               disabled={index === slides.length - 1}
               style={{
                 padding: "10px 24px",

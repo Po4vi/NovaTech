@@ -11,6 +11,7 @@ Endpoints:
 
 import logging
 import asyncio
+from pathlib import Path
 from datetime import datetime, timezone
 from collections import deque
 from typing import List, Dict, Any, Optional
@@ -18,9 +19,13 @@ from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
 from crew.scam_detection_crew import ScamDetectionCrew
 from services.email_ingestion_service import EmailIngestionService
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 # ── Constants ─────────────────────────────────────────────────
 VERSION = "2.0.0"

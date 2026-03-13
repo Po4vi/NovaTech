@@ -35,7 +35,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://novatech-3i4o.onrender.com
+        value: CHANGE_ME_BACKEND_RENDER_URL
     routes:
       - type: rewrite
         source: /*

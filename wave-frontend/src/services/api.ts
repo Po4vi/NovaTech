@@ -30,12 +30,54 @@ export interface AnalysisResult {
     analysis_time_ms: number;
     message_length: number;
     timestamp: string;
+    source?: string;
+    trigger?: string;
   };
 }
 
 export interface SampleMessage {
   label: string;
   message: string;
+}
+
+export interface EmailIntegrationStatus {
+  configured: boolean;
+  imap_host: string;
+  imap_port: number;
+  mailbox: string;
+  username_masked: string;
+  default_limit: number;
+  default_unread_only: boolean;
+  poll_seconds: number;
+  poll_mark_as_seen: boolean;
+}
+
+export interface EmailScanRequest {
+  limit: number;
+  unread_only: boolean;
+  mark_as_seen: boolean;
+}
+
+export interface EmailScanItem {
+  email: {
+    uid: string;
+    message_id: string;
+    subject: string;
+    from: string;
+    date: string;
+  };
+  analysis?: AnalysisResult;
+  error?: string;
+}
+
+export interface EmailScanResponse {
+  scanned_count: number;
+  analyzed_count: number;
+  results: EmailScanItem[];
+  metadata: {
+    trigger: string;
+    timestamp: string;
+  };
 }
 
 class ApiError extends Error {
@@ -90,4 +132,15 @@ export async function analyzeMessage(message: string): Promise<AnalysisResult> {
 export async function fetchExamples(): Promise<SampleMessage[]> {
   const data = await request<{ examples: SampleMessage[] }>("/api/examples");
   return data.examples;
+}
+
+export async function fetchEmailIntegrationStatus(): Promise<EmailIntegrationStatus> {
+  return request<EmailIntegrationStatus>("/api/integrations/email/status");
+}
+
+export async function scanEmailInbox(payload: EmailScanRequest): Promise<EmailScanResponse> {
+  return request<EmailScanResponse>("/api/integrations/email/scan", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

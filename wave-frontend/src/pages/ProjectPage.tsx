@@ -20,12 +20,19 @@ import {
   MessageSquareWarning,
   Copy,
   Check,
+  MailSearch,
+  RefreshCw,
+  Inbox,
 } from "lucide-react";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 import {
   analyzeMessage,
   fetchExamples,
+  fetchEmailIntegrationStatus,
+  scanEmailInbox,
   type AnalysisResult,
+  type EmailIntegrationStatus,
+  type EmailScanResponse,
   type SampleMessage,
 } from "@/services/api";
 
@@ -399,9 +406,33 @@ export function ProjectPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [pipelineStep, setPipelineStep] = useState(-1);
   const [copied, setCopied] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<EmailIntegrationStatus | null>(null);
+  const [emailStatusLoading, setEmailStatusLoading] = useState(false);
+  const [emailStatusError, setEmailStatusError] = useState<string | null>(null);
+  const [emailScanResult, setEmailScanResult] = useState<EmailScanResponse | null>(null);
+  const [emailScanLoading, setEmailScanLoading] = useState(false);
+  const [emailScanError, setEmailScanError] = useState<string | null>(null);
+  const [emailScanLimit, setEmailScanLimit] = useState(10);
+  const [emailUnreadOnly, setEmailUnreadOnly] = useState(true);
+  const [emailMarkAsSeen, setEmailMarkAsSeen] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const refreshEmailStatus = useCallback(async () => {
+    setEmailStatusLoading(true);
+    setEmailStatusError(null);
+
+    try {
+      const status = await fetchEmailIntegrationStatus();
+      setEmailStatus(status);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load email integration status";
+      setEmailStatusError(msg);
+    } finally {
+      setEmailStatusLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchExamples()
@@ -431,11 +462,13 @@ export function ProjectPage() {
         ]);
       });
 
+    refreshEmailStatus();
+
     // Cleanup all pipeline timers on unmount
     return () => {
       timerRefs.current.forEach(clearTimeout);
     };
-  }, []);
+  }, [refreshEmailStatus]);
 
   // Click-outside handler for dropdown
   useEffect(() => {
@@ -503,6 +536,35 @@ export function ProjectPage() {
       // Clipboard API may fail on HTTP or without permissions
     }
   };
+
+  const handleScanInbox = useCallback(async () => {
+    if (!emailStatus?.configured) {
+      setEmailScanError("Email integration is not configured in backend env vars.");
+      return;
+    }
+
+    setEmailScanLoading(true);
+    setEmailScanError(null);
+
+    try {
+      const scanResult = await scanEmailInbox({
+        limit: emailScanLimit,
+        unread_only: emailUnreadOnly,
+        mark_as_seen: emailMarkAsSeen,
+      });
+      setEmailScanResult(scanResult);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Inbox scan failed";
+      setEmailScanError(msg);
+    } finally {
+      setEmailScanLoading(false);
+      refreshEmailStatus();
+    }
+  }, [emailMarkAsSeen, emailScanLimit, emailStatus?.configured, emailUnreadOnly, refreshEmailStatus]);
+
+  const scamCount = emailScanResult?.results.filter((item) => item.analysis?.risk_level === "SCAM").length ?? 0;
+  const suspiciousCount =
+    emailScanResult?.results.filter((item) => item.analysis?.risk_level === "SUSPICIOUS").length ?? 0;
 
 
   return (
@@ -595,6 +657,405 @@ export function ProjectPage() {
                 About Project
               </motion.button>
             </div>
+          </motion.div>
+
+          {/* ─── Email Inbox Scanner ─────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.05 }}
+            style={{
+              ...glassCard,
+              width: "100%",
+              maxWidth: 900,
+              marginBottom: 20,
+              position: "relative",
+              overflow: "hidden",
+              background:
+                "radial-gradient(circle at 10% 0%, rgba(14,165,233,0.17), transparent 42%), radial-gradient(circle at 90% 100%, rgba(245,158,11,0.12), transparent 45%), rgba(10,13,20,0.82)",
+              border: "1px solid rgba(34,211,238,0.2)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 14,
+                flexWrap: "wrap",
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    background: "rgba(34,211,238,0.12)",
+                    border: "1px solid rgba(34,211,238,0.26)",
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <MailSearch size={17} color="#22d3ee" />
+                </div>
+
+                <div>
+                  <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#ebf8ff" }}>
+                    Inbox Auto Scanner
+                  </h2>
+                  <p style={{ fontSize: "0.76rem", color: "#8ba8ba", marginTop: 2 }}>
+                    Pull unread emails from IMAP and run scam detection automatically.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    padding: "5px 10px",
+                    borderRadius: 999,
+                    color: emailStatus?.configured ? "#22c55e" : "#f59e0b",
+                    background: emailStatus?.configured ? "rgba(34,197,94,0.14)" : "rgba(245,158,11,0.14)",
+                    border: emailStatus?.configured
+                      ? "1px solid rgba(34,197,94,0.32)"
+                      : "1px solid rgba(245,158,11,0.32)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {emailStatusLoading
+                    ? "Checking"
+                    : emailStatus?.configured
+                      ? "IMAP Connected"
+                      : "Needs Config"}
+                </span>
+
+                <motion.button
+                  onClick={refreshEmailStatus}
+                  disabled={emailStatusLoading}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 12px",
+                    fontSize: "0.74rem",
+                    color: "#b5d9ea",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    cursor: emailStatusLoading ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                  }}
+                  whileHover={emailStatusLoading ? {} : { y: -1, background: "rgba(255,255,255,0.08)" }}
+                  whileTap={emailStatusLoading ? {} : { scale: 0.98 }}
+                >
+                  <RefreshCw
+                    size={13}
+                    style={emailStatusLoading ? { animation: "spin 0.9s linear infinite" } : {}}
+                  />
+                  Refresh
+                </motion.button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...innerCard,
+                marginBottom: 12,
+                borderColor: "rgba(34,211,238,0.14)",
+                background: "rgba(8,15,22,0.6)",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontSize: "0.68rem", color: "#8ba8ba", fontWeight: 600 }}>
+                  Max Emails / Scan
+                </span>
+                <input
+                  type="number"
+                  value={emailScanLimit}
+                  min={1}
+                  max={100}
+                  onChange={(e) => {
+                    const nextVal = Number.parseInt(e.target.value, 10);
+                    setEmailScanLimit(Number.isNaN(nextVal) ? 1 : Math.min(100, Math.max(1, nextVal)));
+                  }}
+                  style={{
+                    height: 38,
+                    borderRadius: 8,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#e4f3fa",
+                    padding: "0 10px",
+                    fontSize: "0.84rem",
+                  }}
+                />
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: "0.77rem",
+                  color: "#c4d9e6",
+                  fontWeight: 600,
+                  paddingTop: 20,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={emailUnreadOnly}
+                  onChange={(e) => setEmailUnreadOnly(e.target.checked)}
+                  style={{ accentColor: "#22d3ee", width: 14, height: 14 }}
+                />
+                Scan only unread emails
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: "0.77rem",
+                  color: "#c4d9e6",
+                  fontWeight: 600,
+                  paddingTop: 20,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={emailMarkAsSeen}
+                  onChange={(e) => setEmailMarkAsSeen(e.target.checked)}
+                  style={{ accentColor: "#f59e0b", width: 14, height: 14 }}
+                />
+                Mark fetched emails as seen
+              </label>
+
+              <div style={{ display: "flex", alignItems: "end" }}>
+                <motion.button
+                  onClick={handleScanInbox}
+                  disabled={emailScanLoading || !emailStatus?.configured}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 7,
+                    borderRadius: 10,
+                    border: "none",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    color: "#031017",
+                    cursor:
+                      emailScanLoading || !emailStatus?.configured ? "not-allowed" : "pointer",
+                    background:
+                      emailScanLoading || !emailStatus?.configured
+                        ? "rgba(34,211,238,0.25)"
+                        : "linear-gradient(135deg, #22d3ee, #67e8f9)",
+                    boxShadow:
+                      emailScanLoading || !emailStatus?.configured
+                        ? "none"
+                        : "0 8px 24px rgba(34,211,238,0.24)",
+                  }}
+                  whileHover={
+                    emailScanLoading || !emailStatus?.configured
+                      ? {}
+                      : { y: -1, scale: 1.01 }
+                  }
+                  whileTap={emailScanLoading || !emailStatus?.configured ? {} : { scale: 0.98 }}
+                >
+                  {emailScanLoading ? (
+                    <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <Inbox size={14} />
+                  )}
+                  {emailScanLoading ? "Scanning Inbox..." : "Scan Inbox"}
+                </motion.button>
+              </div>
+            </div>
+
+            {emailStatus && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  marginBottom: 10,
+                  fontSize: "0.72rem",
+                  color: "#8ba8ba",
+                }}
+              >
+                <span>Host: {emailStatus.imap_host || "-"}</span>
+                <span>Mailbox: {emailStatus.mailbox}</span>
+                <span>User: {emailStatus.username_masked || "-"}</span>
+                <span>Auto Poll: {emailStatus.poll_seconds > 0 ? `${emailStatus.poll_seconds}s` : "Off"}</span>
+              </div>
+            )}
+
+            {emailStatusError && (
+              <p style={{ fontSize: "0.76rem", color: "#fca5a5", marginBottom: 10 }}>
+                {emailStatusError}
+              </p>
+            )}
+
+            {!emailStatusLoading && emailStatus && !emailStatus.configured && (
+              <div
+                style={{
+                  ...innerCard,
+                  marginBottom: 12,
+                  borderColor: "rgba(245,158,11,0.24)",
+                  background: "rgba(40,25,10,0.45)",
+                }}
+              >
+                <p style={{ fontSize: "0.76rem", color: "#fbbf24", marginBottom: 8, fontWeight: 700 }}>
+                  Configure backend env vars to enable inbox scanning:
+                </p>
+                <p style={{ fontSize: "0.72rem", color: "#fcd34d", fontFamily: "var(--font-mono)" }}>
+                  EMAIL_IMAP_HOST, EMAIL_IMAP_USERNAME, EMAIL_IMAP_PASSWORD
+                </p>
+              </div>
+            )}
+
+            {emailScanError && (
+              <p style={{ fontSize: "0.76rem", color: "#fca5a5", marginBottom: 10 }}>
+                {emailScanError}
+              </p>
+            )}
+
+            {emailScanResult && (
+              <div
+                style={{
+                  ...innerCard,
+                  borderColor: "rgba(255,255,255,0.08)",
+                  background: "rgba(3,8,12,0.45)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    marginBottom: 12,
+                  }}
+                >
+                  <h3 style={{ fontSize: "0.88rem", color: "#d8effa", fontWeight: 700 }}>
+                    Latest Inbox Scan
+                  </h3>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <TagChip text={`Scanned ${emailScanResult.scanned_count}`} color="#67e8f9" />
+                    <TagChip text={`Analyzed ${emailScanResult.analyzed_count}`} color="#22c55e" />
+                    <TagChip text={`Scam ${scamCount}`} color="#ef4444" />
+                    <TagChip text={`Suspicious ${suspiciousCount}`} color="#f59e0b" />
+                  </div>
+                </div>
+
+                {emailScanResult.results.length === 0 ? (
+                  <p style={{ fontSize: "0.78rem", color: "#9fb5c2" }}>
+                    No messages matched this scan filter.
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    {emailScanResult.results.map((item, idx) => {
+                      const level = item.analysis?.risk_level || "SAFE";
+                      const levelTone = LEVEL_COLORS[level] || LEVEL_COLORS.SAFE;
+                      const parsedDate = item.email.date ? new Date(item.email.date) : null;
+                      const dateLabel =
+                        parsedDate && !Number.isNaN(parsedDate.getTime())
+                          ? parsedDate.toLocaleString()
+                          : item.email.date || "Unknown date";
+
+                      return (
+                        <motion.div
+                          key={`${item.email.uid}-${idx}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          style={{
+                            borderRadius: 12,
+                            border: `1px solid ${levelTone.border}`,
+                            background: levelTone.bg,
+                            padding: "12px 12px 10px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "0.77rem",
+                              color: "#e3f4ff",
+                              fontWeight: 700,
+                              lineHeight: 1.35,
+                              marginBottom: 4,
+                            }}
+                            title={item.email.subject || "(No subject)"}
+                          >
+                            {item.email.subject || "(No subject)"}
+                          </p>
+                          <p style={{ fontSize: "0.69rem", color: "#9fc1d2", marginBottom: 6 }}>
+                            {item.email.from || "Unknown sender"}
+                          </p>
+                          <p style={{ fontSize: "0.66rem", color: "#7aa0b3", marginBottom: 8 }}>
+                            {dateLabel}
+                          </p>
+
+                          {item.error ? (
+                            <p style={{ fontSize: "0.72rem", color: "#fca5a5", fontWeight: 600 }}>
+                              Could not analyze this email.
+                            </p>
+                          ) : (
+                            <>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                <span
+                                  style={{
+                                    fontSize: "0.68rem",
+                                    fontWeight: 700,
+                                    color: levelTone.main,
+                                    border: `1px solid ${levelTone.border}`,
+                                    background: "rgba(0,0,0,0.18)",
+                                    borderRadius: 999,
+                                    padding: "3px 8px",
+                                  }}
+                                >
+                                  {level}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: "0.68rem",
+                                    color: "#9fb5c2",
+                                    fontFamily: "var(--font-mono)",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {item.analysis?.risk_score ?? 0}/100
+                                </span>
+                              </div>
+                              <p style={{ fontSize: "0.72rem", color: "#c9deea", lineHeight: 1.4 }}>
+                                {item.analysis?.reasons?.[0] || "No reason provided"}
+                              </p>
+                            </>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
 
           {/* ─── Input Card ─────────────────────────── */}

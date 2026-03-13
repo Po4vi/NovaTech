@@ -23,6 +23,7 @@ import {
   MailSearch,
   RefreshCw,
   Inbox,
+  Radar,
 } from "lucide-react";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 import {
@@ -633,6 +634,28 @@ export function ProjectPage() {
               >
                 Scam Interceptor
               </h1>
+              <motion.button
+                onClick={() => navigate("/email-scan")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 18px",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  color: "#22d3ee",
+                  background: "rgba(34,211,238,0.08)",
+                  border: "1px solid rgba(34,211,238,0.28)",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                whileHover={{ background: "rgba(34,211,238,0.14)", y: -1 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Radar size={14} />
+                Email Scan Room
+              </motion.button>
               {/* About Project Button */}
               <motion.button
                 onClick={() => navigate("/about")}

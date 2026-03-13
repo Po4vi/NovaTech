@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Link } from "react-router-dom";
 
 import { MainPage } from "@/pages/MainPage";
 import { ProjectPage } from "@/pages/ProjectPage";
+import { EmailScanPage } from "@/pages/EmailScanPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { AboutAgentsSlides } from "@/pages/AboutAgentsSlides";
 
@@ -102,6 +103,7 @@ function App() {
         <Route path="/" element={<Navigate to="/main" replace />} />
         <Route path="/main" element={<MainPage />} />
         <Route path="/project" element={<ProjectPage />} />
+        <Route path="/email-scan" element={<EmailScanPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/about-agents" element={<AboutAgentsSlides />} />
         <Route path="*" element={<NotFound />} />
